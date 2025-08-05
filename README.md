@@ -90,6 +90,29 @@ netlify dev
 
 The application will be running at `http://localhost:8888`.
 
+## Manual Configuration (for local development)
+
+If you are not deploying to Netlify and want to run the application on a different server or locally, you can configure the credentials manually by creating a `credentials.json` file in the root of the project.
+
+**⚠️ Security Warning:** This method is **not recommended for production or public repositories**. If you commit this file to a public GitHub repository, your Client Secret will be exposed. It is highly recommended to use environment variables for production environments.
+
+1.  Create a file named `credentials.json` in the root directory of the project.
+2.  Add the following content to the file, replacing the placeholder values with your actual credentials:
+
+```json
+{
+  "web": {
+    "client_id": "YOUR_GOOGLE_CLIENT_ID",
+    "client_secret": "YOUR_GOOGLE_CLIENT_SECRET",
+    "redirect_uris": ["YOUR_REDIRECT_URI"]
+  }
+}
+```
+
+-   `YOUR_GOOGLE_CLIENT_ID`: Replace with your Google Client ID.
+-   `YOUR_GOOGLE_CLIENT_SECRET`: Replace with your Google Client Secret.
+-   `YOUR_REDIRECT_URI`: Replace with the redirect URI you have configured in the Google Cloud Console (e.g., `http://localhost:3000/callback.html`).
+
 ## Deploy to Netlify
 
 You can deploy this application to Netlify to make it available online.
