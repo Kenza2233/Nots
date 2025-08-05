@@ -11,17 +11,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const userName = document.getElementById('user-name');
     const logoutButton = document.getElementById('logout-button');
     const uploader = document.getElementById('uploader');
+    const previewContainer = document.getElementById('preview-container');
 
     // Check authentication status on page load
-    fetch('/check-auth')
-        .then(response => response.json())
-        .then(data => {
-            if (data.isAuthenticated) {
-                showUploader(data.user);
-            } else {
-                showLogin();
-            }
-        });
+    const tokens = localStorage.getItem('google_tokens');
+    if (tokens) {
+        fetch(`/.netlify/functions/api/check-auth?tokens=${encodeURIComponent(tokens)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.isAuthenticated) {
+                    showUploader(data.user);
+                } else {
+                    showLogin();
+                }
+            });
+    } else {
+        showLogin();
+    }
 
     function showUploader(user) {
         authContainer.style.display = 'none';
@@ -37,15 +43,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loginButton.addEventListener('click', () => {
-        window.location.href = '/auth/google';
+        fetch('/.netlify/functions/api/auth/google')
+            .then(response => response.json())
+            .then(data => {
+                window.location.href = data.authUrl;
+            });
     });
 
     logoutButton.addEventListener('click', () => {
-        window.location.href = '/logout';
+        localStorage.removeItem('google_tokens');
+        showLogin();
     });
 
     fileInput.addEventListener('change', () => {
         updateFileLabel();
+        previewFiles();
     });
 
     function updateFileLabel() {
@@ -56,7 +68,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 fileLabel.textContent = `${fileInput.files.length} files selected`;
             }
         } else {
-            fileLabel.textContent = 'Choose a file';
+            fileLabel.textContent = 'Choose files';
+        }
+    }
+
+    function previewFiles() {
+        previewContainer.innerHTML = '';
+        const files = fileInput.files;
+        for (const file of files) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let element;
+                if (file.type.startsWith('image/')) {
+                    element = document.createElement('img');
+                    element.src = e.target.result;
+                    element.classList.add('preview-image');
+                } else if (file.type.startsWith('video/')) {
+                    element = document.createElement('video');
+                    element.src = e.target.result;
+                    element.classList.add('preview-image'); // same class for styling
+                    element.controls = true;
+                }
+                if (element) {
+                    previewContainer.appendChild(element);
+                }
+            }
+            reader.readAsDataURL(file);
         }
     }
 
@@ -72,14 +109,15 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const file of files) {
             formData.append('files', file);
         }
+        formData.append('tokens', localStorage.getItem('google_tokens'));
 
-        fetch('/upload', {
+        fetch('/.netlify/functions/api/upload', {
             method: 'POST',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
-            statusDiv.innerHTML = `<p>${data.message}</p>`;
+            statusDiv.innerHTML = `<p>${data.message || data.error}</p>`;
         })
         .catch(error => {
             console.error('Error uploading files:', error);
@@ -108,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (files.length > 0) {
             fileInput.files = files;
             updateFileLabel();
+            previewFiles();
         }
     });
 });

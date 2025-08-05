@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticating...</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .message {
+            color: #333;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="message">Authenticating, please wait...</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const code = new URLSearchParams(window.location.search).get('code');
+            if (code) {
+                fetch('/.netlify/functions/api/auth/google/callback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.tokens) {
+                        localStorage.setItem('google_tokens', JSON.stringify(data.tokens));
+                        window.location.href = '/';
+                    } else {
+                        document.querySelector('.message').textContent = 'Authentication failed. Please try again.';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during authentication:', error);
+                    document.querySelector('.message').textContent = 'Authentication failed. Please try again.';
+                });
+            } else {
+                document.querySelector('.message').textContent = 'No authorization code found. Please try again.';
+            }
+        });
+    </script>
+</body>
+</html>
